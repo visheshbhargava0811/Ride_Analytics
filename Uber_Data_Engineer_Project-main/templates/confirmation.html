@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ride Confirmed · Uber Ride Simulator</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --black: #000000;
+            --ink: #14141a;
+            --gray: #6b6b76;
+            --line: #e8e8ec;
+            --bg: #f6f6f8;
+            --green: #04703c;
+            --green-bg: #e6f4ec;
+            --red: #a61b1b;
+            --red-bg: #fbeaea;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--ink);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .nav {
+            background: var(--black);
+            color: #fff;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav .brand { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; color: #fff; text-decoration: none; }
+        .nav .tag {
+            font-size: 12px;
+            color: #b9b9c2;
+            border: 1px solid #3a3a42;
+            border-radius: 999px;
+            padding: 4px 12px;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            padding: 40px 24px;
+        }
+
+        .receipt { max-width: 560px; width: 100%; }
+
+        .card {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(20, 20, 26, 0.06);
+            padding: 28px 32px;
+            margin-bottom: 16px;
+        }
+
+        .header-card { text-align: center; padding: 36px 32px; }
+
+        .check {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--green-bg);
+            color: var(--green);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .check svg { width: 28px; height: 28px; }
+
+        .header-card h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 6px; }
+
+        .confirmation-number { color: var(--gray); font-size: 14px; }
+        .confirmation-number strong { color: var(--ink); font-weight: 600; letter-spacing: 0.5px; }
+
+        .badges { margin-top: 14px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+
+        .badge {
+            font-size: 12.5px;
+            font-weight: 600;
+            border-radius: 999px;
+            padding: 5px 14px;
+        }
+
+        .badge.ok { background: var(--green-bg); color: var(--green); }
+        .badge.fail { background: var(--red-bg); color: var(--red); }
+        .badge.neutral { background: #f0f0f3; color: var(--ink); }
+
+        .section-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--gray);
+            margin-bottom: 16px;
+        }
+
+        /* Route */
+        .stop { display: flex; gap: 14px; }
+        .stop + .stop { margin-top: 24px; position: relative; }
+        .stop + .stop::before {
+            content: "";
+            position: absolute;
+            left: 4.5px;
+            top: -20px;
+            height: 16px;
+            border-left: 2px dotted #c5c5cd;
+        }
+
+        .dot { width: 10px; height: 10px; flex-shrink: 0; margin-top: 5px; }
+        .dot.pickup { background: var(--black); border-radius: 50%; }
+        .dot.dropoff { background: var(--black); }
+
+        .stop .when { font-size: 12.5px; color: var(--gray); margin-bottom: 2px; }
+        .stop .where { font-size: 14.5px; line-height: 1.45; }
+
+        .trip-stats {
+            display: flex;
+            border-top: 1px solid var(--line);
+            margin-top: 22px;
+            padding-top: 18px;
+        }
+
+        .trip-stats .stat { flex: 1; text-align: center; }
+        .trip-stats .stat + .stat { border-left: 1px solid var(--line); }
+        .stat .value { font-size: 18px; font-weight: 700; }
+        .stat .label { font-size: 12px; color: var(--gray); margin-top: 2px; }
+
+        /* Driver */
+        .driver { display: flex; align-items: center; gap: 16px; }
+
+        .avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--black);
+            color: #fff;
+            font-weight: 700;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .driver .name { font-size: 15.5px; font-weight: 600; }
+        .driver .meta { font-size: 13px; color: var(--gray); margin-top: 2px; }
+        .driver .rating { margin-left: auto; text-align: right; }
+        .driver .rating .value { font-size: 16px; font-weight: 700; }
+        .driver .rating .label { font-size: 12px; color: var(--gray); }
+
+        .vehicle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--line);
+            margin-top: 18px;
+            padding-top: 16px;
+            font-size: 14px;
+        }
+
+        .vehicle-row .plate {
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            background: #f0f0f3;
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        /* Fare */
+        .fare-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            padding: 7px 0;
+            color: var(--ink);
+        }
+
+        .fare-row .muted { color: var(--gray); }
+
+        .fare-row.total {
+            border-top: 1px solid var(--line);
+            margin-top: 8px;
+            padding-top: 14px;
+            font-size: 17px;
+            font-weight: 700;
+        }
+
+        .payment {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: var(--gray);
+            margin-top: 12px;
+        }
+
+        .actions { display: flex; gap: 12px; margin-top: 4px; }
+
+        .button {
+            flex: 1;
+            display: block;
+            text-align: center;
+            padding: 15px;
+            font-size: 15px;
+            font-weight: 600;
+            border-radius: 10px;
+            text-decoration: none;
+            transition: background 0.15s ease;
+        }
+
+        .button.primary { background: var(--black); color: #fff; }
+        .button.primary:hover { background: #2a2a32; }
+        .button.secondary { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+        .button.secondary:hover { background: #f6f6f8; }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 12.5px;
+            color: var(--gray);
+        }
+
+        @media (max-width: 480px) {
+            .card { padding: 22px 20px; }
+            main { padding: 24px 16px; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <a href="/" class="brand">Uber</a>
+        <span class="tag">Data Engineering Demo</span>
+    </nav>
+
+    <main>
+        <div class="receipt">
+
+            <div class="card header-card">
+                <div class="check">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                </div>
+                <h1>Your ride is booked</h1>
+                <p class="confirmation-number">Confirmation <strong>{{ ride.confirmation_number }}</strong></p>
+                <div class="badges">
+                    <span class="badge neutral">{{ vehicle_type }}</span>
+                    {% if sent_to_event_hub %}
+                    <span class="badge ok">Streamed to Event Hub</span>
+                    {% else %}
+                    <span class="badge fail">Event Hub send failed</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card">
+                <p class="section-title">Trip</p>
+                <div class="stop">
+                    <span class="dot pickup"></span>
+                    <div>
+                        <p class="when">{{ pickup_time }}</p>
+                        <p class="where">{{ ride.pickup_address }}</p>
+                    </div>
+                </div>
+                <div class="stop">
+                    <span class="dot dropoff"></span>
+                    <div>
+                        <p class="when">{{ dropoff_time }}</p>
+                        <p class="where">{{ ride.dropoff_address }}</p>
+                    </div>
+                </div>
+                <div class="trip-stats">
+                    <div class="stat">
+                        <p class="value">{{ ride.distance_miles }} mi</p>
+                        <p class="label">Distance</p>
+                    </div>
+                    <div class="stat">
+                        <p class="value">{{ ride.duration_minutes }} min</p>
+                        <p class="label">Duration</p>
+                    </div>
+                    <div class="stat">
+                        <p class="value">{{ "%.2f"|format(ride.surge_multiplier) }}×</p>
+                        <p class="label">Surge</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <p class="section-title">Driver &amp; vehicle</p>
+                <div class="driver">
+                    <div class="avatar">{{ ride.driver_name[0] }}</div>
+                    <div>
+                        <p class="name">{{ ride.driver_name }}</p>
+                        <p class="meta">{{ ride.vehicle_color }} {{ ride.vehicle_model }}</p>
+                    </div>
+                    <div class="rating">
+                        <p class="value">★ {{ "%.2f"|format(ride.driver_rating) }}</p>
+                        <p class="label">Rating</p>
+                    </div>
+                </div>
+                <div class="vehicle-row">
+                    <span>License plate</span>
+                    <span class="plate">{{ ride.license_plate }}</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <p class="section-title">Fare</p>
+                <div class="fare-row"><span class="muted">Base fare</span><span>${{ "%.2f"|format(ride.base_fare) }}</span></div>
+                <div class="fare-row"><span class="muted">Distance</span><span>${{ "%.2f"|format(ride.distance_fare) }}</span></div>
+                <div class="fare-row"><span class="muted">Time</span><span>${{ "%.2f"|format(ride.time_fare) }}</span></div>
+                <div class="fare-row"><span class="muted">Surge ({{ "%.2f"|format(ride.surge_multiplier) }}×)</span><span>${{ "%.2f"|format(ride.subtotal) }}</span></div>
+                <div class="fare-row"><span class="muted">Tip</span><span>${{ "%.2f"|format(ride.tip_amount) }}</span></div>
+                <div class="fare-row total"><span>Total</span><span>${{ "%.2f"|format(ride.total_fare) }}</span></div>
+                <div class="payment">
+                    <span>Paid with {{ payment_method }}</span>
+                    <span>{{ ride.passenger_name }}</span>
+                </div>
+            </div>
+
+            <div class="actions">
+                <a href="/" class="button secondary">Back to home</a>
+                <a href="/book" class="button primary">Book another ride</a>
+            </div>
+        </div>
+    </main>
+
+    <footer>Ride event streamed as JSON · ride_id {{ ride.ride_id }}</footer>
+</body>
+</html>
